@@ -55,6 +55,14 @@ jobs:
                - **Propuesta de solución**: pasos concretos para implementarla.
                - **Información faltante**: preguntas al autor si el reporte es ambiguo (omitir si no aplica).
                - **Complejidad estimada**: baja / media / alta.
+
+               FORMATO (obligatorio): el comentario debe estar en Markdown compatible con GitHub (GFM):
+               - Cada sección como encabezado `###` (p. ej. `### Resumen`), con una línea en blanco antes y después.
+               - Listas con `-` o `1.`; nombres de archivos, funciones y labels entre `backticks`.
+               - Fragmentos de código en bloques con triple backtick y lenguaje (p. ej. ```js).
+               - Referencias a líneas como `game.js:123`; sin HTML salvo el comentario oculto inicial.
+               - Al pasar el cuerpo con `gh`, usa `--body-file` o un heredoc para conservar los saltos de línea
+                 (no uses `\n` literales dentro de comillas).
             5. Si ya existe un comentario con `<!-- claude-triage -->` (caso `edited`), ACTUALÍZALO en lugar de
                crear otro: busca su id con `gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments`
                y edítalo con `gh api -X PATCH repos/${{ github.repository }}/issues/comments/<id> -f body=...`.
