@@ -61,6 +61,7 @@ const levelEl = document.getElementById('level');
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
+const resumeBtn = document.getElementById('resume-btn');
 const restartBtn = document.getElementById('restart-btn');
 
 const slotsEl = document.getElementById('powerup-slots');
@@ -359,6 +360,7 @@ function drawPieceIn(context, piece, size, slot) {
 function endGame() {
   if (ch) { finishChallenge('lose'); return; }
   gameOver = true;
+  resumeBtn.classList.add('hidden');
   playSound('gameover');
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
@@ -370,7 +372,9 @@ function togglePause() {
   if (gameOver) return;
   if (!paused) cancelAim();
   paused = !paused;
+  resumeBtn.classList.toggle('hidden', !paused);
   if (!paused) {
+    overlay.classList.add('hidden');
     lastTime = performance.now();
     loop(lastTime);
   } else {
@@ -451,6 +455,7 @@ function resetRun() {
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  resumeBtn.classList.add('hidden');
   overlay.classList.remove('win');
   restartBtn.textContent = 'Reiniciar';
   nextLevelBtn.classList.add('hidden');
@@ -1128,6 +1133,7 @@ muteBtn.addEventListener('click', () => { AudioManager.unlock(); toggleMute(); m
 document.addEventListener('pointerdown', () => AudioManager.unlock());
 syncSoundUI();
 
+resumeBtn.addEventListener('click', () => { resumeBtn.blur(); if (paused) togglePause(); });
 restartBtn.addEventListener('click', () => ch ? startChallenge(ch.def.id, ch.lvlIdx) : init());
 
 // ---- Tema claro/oscuro (oscuro por defecto) ----
@@ -1229,6 +1235,7 @@ function finishChallenge(result) {
   overlay.classList.toggle('win', won);
   overlayTitle.textContent = won ? '¡VICTORIA!' : 'DERROTA';
   overlayScore.textContent = [ch.def.name + ' · ' + ch.lvl.label, res && res.text].filter(Boolean).join(' — ');
+  resumeBtn.classList.add('hidden');
   restartBtn.textContent = 'Reiniciar desafío';
   nextLevelBtn.classList.toggle('hidden', !(won && ch.def.levels[ch.lvlIdx + 1]));
   menuBtn.classList.remove('hidden');

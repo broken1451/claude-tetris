@@ -203,7 +203,7 @@ kbd {
   color: var(--value);
 }
 
-#restart-btn, #next-level-btn, #menu-btn {
+#resume-btn, #restart-btn, #next-level-btn, #menu-btn {
   margin-top: 8px;
   background: var(--btn-bg);
   color: var(--btn-text);
@@ -217,7 +217,7 @@ kbd {
   transition: background 0.15s;
 }
 
-#restart-btn:hover, #next-level-btn:hover, #menu-btn:hover {
+#resume-btn:hover, #restart-btn:hover, #next-level-btn:hover, #menu-btn:hover {
   background: var(--btn-bg-hover);
 }
 
