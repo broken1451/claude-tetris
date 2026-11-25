@@ -44,6 +44,27 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
 - **Pausa** y **Game Over** con opción de reinicio.
+- **Combos y bonificaciones** (toda la lógica y los valores en `scoring.js`, `SCORING_CONFIG`):
+  - **Combo**: limpiar líneas en piezas consecutivas sube el multiplicador x1 → x2 → x3… (tope x8) sobre el total de la jugada; bloquear una pieza sin líneas lo reinicia.
+  - **T-Spin / Mini T-Spin** (regla de 3 esquinas, último movimiento = rotación): 400/800/1200/1600 (0–3 líneas) y 100/200/400 (mini), × nivel.
+  - **Back-to-Back**: Tetris o T-Spin con líneas consecutivos puntúan ×1.5.
+  - **Perfect Clear**: tablero vacío tras limpiar líneas, +800/1200/1800/2000 × nivel.
+  - Panel con multiplicador y badge B2B, animaciones, etiquetas flotantes y efectos para T-Spin, B2B y Perfect Clear.
+  - **Sonido** sintetizado (WebAudio, `audio.js`) con volumen y silencio (`M`), guardados en `localStorage`.
+- **Piezas especiales** (10 % de las piezas, configurable en `SPECIAL_CONFIG`), con marco interior blanco para distinguirlas: pentominó **+**, **U** e **Y**, y pieza **hueca 3×3**. Al hacer un **Tetris** (4 líneas) la siguiente pieza es un **Single 1×1**.
+- **Power-ups aleatorios** (cada 5 líneas hay un 60 % de probabilidad de ganar uno; hasta 3 en inventario, teclas `1`–`3` o clic en el slot):
+  - 💣 **Bomba**: destruye un área 3×3 alrededor de la celda elegida.
+  - ⚡ **Rayo**: elimina una fila o columna completa (`R` alterna).
+  - 🎨 **Tinte**: convierte todos los bloques del color elegido en comodines (arcoíris).
+  - ⏬ **Gravedad**: compacta los bloques de cada columna eliminando huecos.
+  - ❄️ **Congelar**: detiene la caída de la pieza durante 5 s.
+  - Los que piden objetivo entran en modo apuntado: ratón o flechas + `Enter`, `Esc`/clic derecho cancela. Configuración y catálogo en `powerups.js`.
+- **Habilidades cargables** (solo modo Clásico): una barra de energía ⚡ (0–100) se recarga al limpiar líneas (+8/16/24/40 por 1/2/3/4 líneas). Con `Q` (o clic en la barra) se abre el menú —pausa el juego— y se elige una habilidad con `1`–`5` o clic; si no hay energía suficiente no se activa:
+  - 🔮 **Visión anticipada** (30): muestra las siguientes 5 piezas durante 20 s.
+  - 🔀 **Intercambio** (25): cambia la pieza actual por otra al azar.
+  - 🐢 **Tiempo lento** (40): la caída es 2,5× más lenta durante 10 s.
+  - ⏪ **Deshacer** (50): revierte la última colocación (tablero, puntos y la energía que dio).
+  - Las temporales muestran una barra de duración en el panel. Catálogo y reglas en `abilities.js`.
 - **Título «Claude Tetris»** centrado, con cada letra coloreada con la paleta de las piezas.
 
 ---
@@ -88,6 +109,8 @@ Después abre `http://localhost:8000` en el navegador.
 | `↓`       | Soft drop (bajar más rápido)      |
 | `Espacio` | Hard drop (caída instantánea)     |
 | `P`       | Pausar / reanudar                 |
+| `Q`       | Abrir / cerrar menú de habilidades |
+| `C` / `Shift` | Hold: reservar/intercambiar pieza (una vez por pieza) |
 
 ---
 
@@ -217,3 +240,7 @@ Todo lo realizado hasta ahora, en orden cronológico:
 ## Licencia
 
 Proyecto de uso libre con fines educativos y de práctica.
+
+## Modo Desafío
+
+Pestaña **Desafío**: 5 desafíos con 3 niveles cada uno (Contrarreloj, Supervivencia, Tablero preconfigurado, Piezas invisibles, Rotación inversa). Muestra objetivo, progreso y cronómetro; al terminar aparece victoria/derrota con opciones de reiniciar, siguiente nivel o volver al menú. Las estadísticas son independientes del modo clásico. Para añadir desafíos, ver `challenges.js`.

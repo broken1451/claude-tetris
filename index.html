@@ -13,14 +13,39 @@
     <span>T</span><span>e</span><span>t</span><span>r</span><span>i</span><span>s</span>
   </h1>
 
-  <div class="wrapper">
+  <nav class="mode-tabs" aria-label="Modo de juego">
+    <button id="tab-classic" type="button" class="mode-tab active">Clásico</button>
+    <button id="tab-challenge" type="button" class="mode-tab">Desafío</button>
+  </nav>
+
+  <section id="challenge-menu" class="challenge-menu hidden" aria-label="Menú de desafíos"></section>
+
+  <div class="wrapper" id="game-wrapper">
     <div class="game-container">
-      <canvas id="board" width="300" height="600"></canvas>
+      <div class="board-wrap">
+        <canvas id="board" width="300" height="600"></canvas>
+        <div id="toast" class="toast" aria-live="polite"></div>
+        <div id="aim-hint" class="aim-hint hidden"></div>
+        <div id="freeze-bar" class="freeze-bar hidden"><span></span></div>
+        <div id="challenge-badge" class="challenge-badge hidden"></div>
+        <div id="ability-menu" class="ability-menu hidden" role="menu" aria-label="Habilidades"></div>
+      </div>
 
       <aside class="panel">
+        <div id="challenge-hud" class="panel-section challenge-hud hidden">
+          <span class="label" id="ch-name">DESAFÍO</span>
+          <span class="ch-level" id="ch-level"></span>
+          <span class="ch-timer" id="ch-timer"></span>
+          <div class="ch-bar"><span id="ch-bar-fill"></span></div>
+          <span class="ch-text" id="ch-text"></span>
+        </div>
         <div class="panel-section">
           <span class="label">SCORE</span>
           <span class="value" id="score">0</span>
+        </div>
+        <div class="panel-section classic-only">
+          <span class="label">COMBO <span id="b2b" class="b2b hidden">B2B</span></span>
+          <span class="value combo" id="combo">x1</span>
         </div>
         <div class="panel-section">
           <span class="label">LINES</span>
@@ -36,6 +61,34 @@
           <canvas id="next-canvas" width="120" height="120"></canvas>
         </div>
 
+        <div class="panel-section classic-only">
+          <span class="label">ENERGÍA <kbd>Q</kbd></span>
+          <button id="energy" class="energy" type="button" aria-label="Abrir habilidades">
+            <span class="energy-track"><span id="energy-fill" class="energy-fill"></span></span>
+            <span id="energy-text" class="energy-text">0/100</span>
+          </button>
+          <div id="ability-timers" class="ability-timers"></div>
+          <canvas id="lookahead-canvas" class="hidden" width="48" height="240" aria-label="Próximas 5 piezas"></canvas>
+        </div>
+
+        <div class="panel-section classic-only">
+          <span class="label">HOLD <kbd>C</kbd>/<kbd>⇧</kbd></span>
+          <canvas id="hold-canvas" class="inactive" width="72" height="72"></canvas>
+        </div>
+
+        <div class="panel-section classic-only">
+          <span class="label">POWER-UPS</span>
+          <div id="powerup-slots" class="slots"></div>
+        </div>
+
+        <div class="panel-section">
+          <span class="label">SONIDO</span>
+          <div class="sound">
+            <button id="mute-btn" type="button" aria-label="Silenciar" aria-pressed="false">🔊</button>
+            <input id="volume" type="range" min="0" max="100" step="5" value="50" aria-label="Volumen" />
+          </div>
+        </div>
+
         <div class="panel-section">
           <span class="label">TEMA</span>
           <button id="theme-toggle" class="theme-switch" type="button" role="switch" aria-checked="false" aria-label="Modo claro">
@@ -48,10 +101,16 @@
           <span class="label">CONTROLS</span>
           <ul>
             <li><kbd>←</kbd><kbd>→</kbd> mover</li>
-            <li><kbd>↑</kbd> rotar</li>
+            <li><kbd>↑</kbd> <span id="rot-hint">rotar</span></li>
             <li><kbd>↓</kbd> bajar</li>
             <li><kbd>Space</kbd> caída</li>
             <li><kbd>P</kbd> pausa</li>
+            <li><kbd>1</kbd>-<kbd>3</kbd> power-up</li>
+            <li><kbd>R</kbd> rayo fila/col</li>
+            <li><kbd>Q</kbd> habilidades</li>
+            <li><kbd>C</kbd> / <kbd>Shift</kbd> reserva (Hold)</li>
+            <li><kbd>Esc</kbd> cancelar</li>
+            <li><kbd>M</kbd> silenciar</li>
           </ul>
         </div>
       </aside>
@@ -62,10 +121,17 @@
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
         <button id="restart-btn">Reiniciar</button>
+        <button id="next-level-btn" class="hidden">Siguiente nivel</button>
+        <button id="menu-btn" class="hidden">Menú de desafíos</button>
       </div>
     </div>
   </div>
 
+  <script src="powerups.js"></script>
+  <script src="challenges.js"></script>
+  <script src="abilities.js"></script>
+  <script src="scoring.js"></script>
+  <script src="audio.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
