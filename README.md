@@ -25,6 +25,8 @@ Implementación del clásico **Tetris** en JavaScript vanilla, usando HTML5 Canv
   - [Tecnologías](#tecnologías)
   - [Estructura del proyecto](#estructura-del-proyecto)
   - [Personalización](#personalización)
+  - [Historial del repositorio](#historial-del-repositorio)
+  - [Integración con Claude Code](#integración-con-claude-code)
   - [Licencia](#licencia)
 
 ---
@@ -42,6 +44,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
 - **Pausa** y **Game Over** con opción de reinicio.
+- **Título «Claude Tetris»** centrado, con cada letra coloreada con la paleta de las piezas.
 
 ---
 
@@ -96,6 +99,7 @@ El juego se compone de tres archivos que cooperan:
 
 Define la estructura visual:
 
+- Un título `<h1 class="title">` («Claude Tetris») con una `<span>` por letra para colorearlas individualmente.
 - Un `<canvas id="board">` de **300 × 600** píxeles donde se renderiza el tablero.
 - Un panel lateral con `SCORE`, `LINES`, `LEVEL`, vista de la siguiente pieza y la lista de controles.
 - Un overlay para los estados **PAUSA** y **GAME OVER**.
@@ -155,11 +159,18 @@ Cuando una pieza recién generada ya colisiona al aparecer (`spawn`), se dispara
 ## Estructura del proyecto
 
 ```
-03-tetris/
-├── index.html      # Estructura del DOM y canvas
-├── style.css       # Estilos del juego (dark theme)
-├── game.js         # Toda la lógica del Tetris (~300 líneas)
-└── README.md
+03-claude-tetris/
+├── index.html                       # Estructura del DOM y canvas
+├── style.css                        # Estilos del juego (dark theme + título)
+├── game.js                          # Toda la lógica del Tetris (~300 líneas)
+├── README.md
+├── CLAUDE.md                        # Guía del proyecto para Claude Code
+├── .gitignore                       # Ignora .DS_STORE
+├── .claude/
+│   └── skills/clima-local/SKILL.md  # Skill local: clima de Santiago u otra ciudad
+└── .github/workflows/
+    ├── claude.yml                   # Claude Code al mencionar @claude
+    └── claude-code-review.yml       # Revisión automática de PRs
 ```
 
 ---
@@ -178,6 +189,28 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
 
 > Si cambias `COLS`, `ROWS` o `BLOCK`, recuerda ajustar también `width` y `height` del `<canvas id="board">` en `index.html` para que coincida (`COLS × BLOCK` × `ROWS × BLOCK`).
+
+---
+
+## Historial del repositorio
+
+Todo lo realizado hasta ahora, en orden cronológico:
+
+| Fecha      | Cambio                                                                                                                                                                                  |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-29 | **Primer commit**: juego completo (`index.html`, `style.css`, `game.js`), `README.md` y `.gitignore`.                                                                                   |
+| 2026-11-25 | **PR #1**: se añaden los workflows de GitHub Actions *Claude PR Assistant* (`claude.yml`) y *Claude Code Review* (`claude-code-review.yml`).                                            |
+| 2026-11-25 | **PR #3** (originado por el issue #2): Claude añade el título centrado y coloreado «Claude Tetris» (`index.html` +6 líneas, `style.css` +29 líneas; `body` pasa a `flex-direction: column`). |
+| 2026-11-25 | Se añaden `CLAUDE.md` y la skill local `clima-local` en `.claude/` (aún sin commit).                                                                                                    |
+
+---
+
+## Integración con Claude Code
+
+- **`CLAUDE.md`**: describe la arquitectura, cómo ejecutar el juego y los _gotchas_ (p. ej. mantener `COLS`/`ROWS`/`BLOCK` alineados con el canvas).
+- **`.github/workflows/claude.yml`**: se activa con issues, comentarios y reviews que contengan `@claude`; permite que Claude trabaje sobre el repo desde GitHub (así se creó el título).
+- **`.github/workflows/claude-code-review.yml`**: ejecuta `/code-review:code-review --comment` con `anthropics/claude-code-action@v1` sobre cada pull request.
+- **`.claude/skills/clima-local`**: skill que consulta el clima actual y el pronóstico de Santiago de Chile (o la ciudad indicada).
 
 ---
 
