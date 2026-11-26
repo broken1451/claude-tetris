@@ -17,10 +17,14 @@ Files: `challenges.js` (Modo Desafío: catálogo + `ChallengeStats`), `powerups.
 Key points in `game.js`:
 - Board is a `ROWS × COLS` matrix; cells hold `0` (empty), a color index 1–7 (standard pieces), `8` (wildcard) or 9–13 (special pieces: +, U, Y, 1×1, hollow 3×3). `PIECES`/`COLORS` are indexed by that value; `MAX_CELL` in `powerups.js` must match. Special-piece odds live in `SPECIAL_CONFIG`; a Tetris swaps `next` for the 1×1.
 - Pieces are square matrices; rotation is transpose + row reverse (`rotateCW`), with wall kicks of ±1/±2 columns in `tryRotate`.
-- The loop (`loop`) uses `requestAnimationFrame`, accumulating elapsed time against `dropInterval`. Fall speed is `max(100, 1000 − (level − 1) × 90)` ms; level rises every 10 lines.
+- The loop (`loop`) uses `requestAnimationFrame`, accumulating elapsed time against `dropInterval`. Fall speed is `max(100, 1000 − (level − 1) × 90)` ms; level is `runStartLevel + floor(lines / 10)` (`levelFor` / `dropIntervalFor`).
 - Scoring lives entirely in `scoring.js` (`SCORING_CONFIG`, `scoreLock`, `detectTSpin`, `scoreDrop`): line/T-Spin tables × level, combo multiplies the move total, Back-to-Back ×1.5, Perfect Clear bonus. `lockPiece()` calls `detectTSpin` before `merge()`, then `scoreLock`, then `onScoreEvent` (HUD/effects/sound). `lastWasRotation` must be reset by every successful translation. Power-up line clears use `scoreClearOnly` (no combo/B2B).
 - Sound: `audio.js` synthesizes `SOUNDS` with WebAudio; the context is created on the first user gesture; volume/mute persist in `localStorage('sound')`.
 - `spawn()` moves `next` to `current`; if the new piece collides immediately, `endGame()` fires.
+
+## Menú de pausa
+
+Section "Menú de pausa y nivel inicial" in `game.js`; DOM is `#pause-menu` (separate from `#overlay`, which is only game over / challenge result). `P`/`Esc` toggle it (`e.repeat` ignored); `Esc` first cancels aiming or closes the ability menu, and goes back from the controls view. `paused` is shared with the ability menu; `pauseMenuOpen` identifies this one. While open, `.game-container` is `inert` and the keydown handler drops game keys (`M` still mutes). `resetRun` closes it. `startLevelPref` (1–15, `localStorage('startLevel')`) is copied into `runStartLevel` only in `resetRun` (always 1 in challenges). New keys must also be listed in `#pause-controls`.
 
 ## Power-ups
 
