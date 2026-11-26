@@ -4,7 +4,7 @@
 // Para añadir un power-up nuevo basta con agregar una entrada a POWERUPS.
 
 const WILD = 8; // índice de bloque comodín (solo visual)
-const MAX_CELL = 14; // mayor índice válido en el tablero (piezas especiales 9–13, 14 = basura/bloque fijo del Modo Desafío); debe coincidir con COLORS en game.js
+const MAX_CELL = 14; // mayor índice válido en el tablero (piezas especiales 9–13, 14 = basura/bloque fijo del Modo Desafío); cada SKINS[*].colors de skins.js necesita MAX_CELL + 1 entradas
 
 const POWERUP_CONFIG = {
   everyLines: 5,     // cada cuántas líneas se tira el dado

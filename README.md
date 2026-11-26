@@ -17,6 +17,7 @@ Implementación del clásico **Tetris** en JavaScript vanilla, usando HTML5 Canv
     - [Opción 1: abrir el archivo directamente](#opción-1-abrir-el-archivo-directamente)
     - [Opción 2: servidor local (recomendado)](#opción-2-servidor-local-recomendado)
   - [Controles](#controles)
+  - [Temas visuales (skins)](#temas-visuales-skins)
   - [Cómo funciona](#cómo-funciona)
     - [1. `index.html`](#1-indexhtml)
     - [2. `style.css`](#2-stylecss)
@@ -66,6 +67,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
   - ⏪ **Deshacer** (50): revierte la última colocación (tablero, puntos y la energía que dio).
   - Las temporales muestran una barra de duración en el panel. Catálogo y reglas en `abilities.js`.
 - **Título «Claude Tetris»** centrado, con cada letra coloreada con la paleta de las piezas.
+- **Temas visuales (skins)**: ver [Temas visuales](#temas-visuales-skins).
 
 ---
 
@@ -111,6 +113,21 @@ Después abre `http://localhost:8000` en el navegador.
 | `P`       | Pausar / reanudar                 |
 | `Q`       | Abrir / cerrar menú de habilidades |
 | `C` / `Shift` | Hold: reservar/intercambiar pieza (una vez por pieza) |
+
+---
+
+## Temas visuales (skins)
+
+El selector **SKIN** del panel lateral cambia la apariencia completa al instante, sin recargar:
+
+| Skin          | Aspecto                                                                       |
+| ------------- | ----------------------------------------------------------------------------- |
+| **Retro**     | Bloques cuadrados de color plano (el aspecto original, por defecto).          |
+| **Neon**      | Tablero y vistas en negro, con bloques brillantes y resplandor (`shadowBlur`). |
+| **Pastel**    | Colores suaves y esquinas redondeadas.                                        |
+| **Pixel art** | Textura de píxeles dibujada sobre cada bloque, escalada a su tamaño.          |
+
+El skin se combina con el interruptor claro/oscuro (en Neon el tablero sigue siendo negro en ambos modos) y la preferencia se guarda en `localStorage('skin')`. El catálogo está en `skins.js`: para añadir uno basta una entrada en `SKINS` (paleta de los índices 1–14 y función `drawBlock`) y, si se quiere, reglas `[data-skin="id"]` en `style.css`.
 
 ---
 
@@ -186,6 +203,7 @@ Cuando una pieza recién generada ya colisiona al aparecer (`spawn`), se dispara
 ├── index.html                       # Estructura del DOM y canvas
 ├── style.css                        # Estilos del juego (dark theme + título)
 ├── game.js                          # Toda la lógica del Tetris (~300 líneas)
+├── skins.js                         # Temas visuales: paletas y dibujo de bloques
 ├── README.md
 ├── CLAUDE.md                        # Guía del proyecto para Claude Code
 ├── .gitignore                       # Ignora .DS_STORE
@@ -207,7 +225,7 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `COLS`         | Columnas del tablero                     | `10`                  |
 | `ROWS`         | Filas del tablero                        | `20`                  |
 | `BLOCK`        | Tamaño en píxeles de cada celda          | `30`                  |
-| `COLORS`       | Paleta de colores por tipo de pieza      | 7 colores             |
+| `SKINS`        | Paleta y dibujo de bloques (`skins.js`)  | 4 skins               |
 | `LINE_SCORES`  | Puntos por 1, 2, 3 o 4 líneas eliminadas | `[0,100,300,500,800]` |
 | `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
 

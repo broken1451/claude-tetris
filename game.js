@@ -4,26 +4,8 @@ const COLS = 10;
 const ROWS = 20;
 const BLOCK = 30;
 
-const COLORS = [
-  null,
-  '#4dd0e1', // I - cyan
-  '#ffd54f', // O - yellow
-  '#ba68c8', // T - purple
-  '#81c784', // S - green
-  '#e57373', // Z - red
-  '#90caf9', // J - pale blue
-  '#ffb74d', // L - orange
-  '#ffffff', // 8 - comodín (Tinte); se pinta con degradado arcoíris
-  // 9+ : piezas especiales (se dibujan con marco interior blanco)
-  '#ff4081', // 9  - Pentominó + (rosa)
-  '#c6ff00', // 10 - Pentominó U (lima)
-  '#7c4dff', // 11 - Pentominó Y (violeta)
-  '#00e676', // 12 - Single 1×1 (esmeralda)
-  '#18ffff', // 13 - Hueca 3×3 (aqua)
-  '#78909c', // 14 - basura / bloque fijo del Modo Desafío (gris)
-];
-
-const FIRST_SPECIAL = 9;
+// Skin activo y su paleta (catálogo en skins.js); los asigna setSkin() antes del primer dibujo.
+let skin, COLORS;
 
 const PIECES = [
   null,
@@ -258,28 +240,14 @@ function updateHUD() {
   levelEl.textContent = level;
 }
 
-function drawBlock(context, x, y, colorIndex, size, alpha) {
+// Único punto que dibuja bloques; el aspecto lo decide el skin activo. save/restore garantiza que
+// alpha, sombras (Neon) y trazos no se filtren al siguiente dibujo.
+function drawBlock(context, x, y, colorIndex, size, alpha, ghost = false) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  context.save();
   context.globalAlpha = alpha ?? 1;
-  if (colorIndex === WILD) {
-    const g = context.createLinearGradient(x * size, y * size, (x + 1) * size, (y + 1) * size);
-    ['#e57373', '#ffd54f', '#81c784', '#4dd0e1', '#ba68c8'].forEach((col, i, a) => g.addColorStop(i / (a.length - 1), col));
-    context.fillStyle = g;
-  } else {
-    context.fillStyle = color;
-  }
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  if (colorIndex >= FIRST_SPECIAL) {
-    // marca de pieza especial: marco interior blanco + brillo
-    context.strokeStyle = 'rgba(255,255,255,0.9)';
-    context.lineWidth = 2;
-    context.strokeRect(x * size + 5, y * size + 5, size - 10, size - 10);
-  }
-  context.globalAlpha = 1;
+  skin.drawBlock(context, x * size, y * size, size, colorIndex, COLORS[colorIndex], ghost);
+  context.restore();
 }
 
 function drawGrid() {
@@ -321,7 +289,7 @@ function draw() {
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
       if (current.shape[r][c])
-        drawBlock(ctx, current.x + c, gy + r, current.shape[r][c], BLOCK, 0.2);
+        drawBlock(ctx, current.x + c, gy + r, current.shape[r][c], BLOCK, skin.ghostAlpha, true);
 
   // current piece
   for (let r = 0; r < current.shape.length; r++)
@@ -1146,9 +1114,8 @@ function applyTheme(theme) {
   else delete document.documentElement.dataset.theme;
   themeToggle.setAttribute('aria-checked', String(light));
   themeText.textContent = light ? 'Claro' : 'Oscuro';
-  // redibujar aunque esté en pausa o game over
-  draw();
-  drawNext();
+  syncSkinVars();   // el fondo y la rejilla de cada skin dependen del tema
+  redrawAll();      // redibujar aunque esté en pausa o game over
 }
 
 let savedTheme = null;
@@ -1314,6 +1281,52 @@ tabChallenge.addEventListener('click', () => { tabChallenge.blur(); showMenu(tru
 nextLevelBtn.addEventListener('click', () => { nextLevelBtn.blur(); startChallenge(ch.def.id, ch.lvlIdx + 1); });
 menuBtn.addEventListener('click', () => { menuBtn.blur(); showMenu(true); });
 
+// ---- Temas visuales / skins (catálogo y dibujo de bloques en skins.js) ----
+const skinOptionsEl = document.getElementById('skin-options');
+
+// Fondo del tablero y rejilla propios del skin como variables CSS; sin ellos manda el tema claro/oscuro.
+function syncSkinVars() {
+  const root = document.documentElement;
+  const theme = root.dataset.theme === 'light' ? 'light' : 'dark';
+  for (const [prop, value] of [['--canvas-bg', skin.boardBg], ['--grid', skin.grid]]) {
+    if (value) root.style.setProperty(prop, value[theme]);
+    else root.style.removeProperty(prop);
+  }
+}
+
+function setSkin(id) {
+  skin = SKINS[resolveSkinId(id)];
+  COLORS = skin.colors;
+  document.documentElement.dataset.skin = skin.id;
+  syncSkinVars();
+  for (const b of skinOptionsEl.children) b.setAttribute('aria-pressed', String(b.dataset.skinId === skin.id));
+}
+
+// Todos los canvas con bloques: tablero, siguiente (incluye lookahead) y Hold.
+function redrawAll() {
+  draw();
+  drawNext();
+  drawHold();
+}
+
+for (const { id, name } of Object.values(SKINS)) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'skin-btn';
+  b.dataset.skinId = id;
+  b.textContent = name;
+  b.addEventListener('click', () => {
+    b.blur();   // evita que Espacio/Enter vuelvan a activar el botón durante la partida
+    setSkin(id);
+    try { localStorage.setItem('skin', id); } catch (e) {}
+    redrawAll();
+  });
+  skinOptionsEl.appendChild(b);
+}
+
+let savedSkin = null;
+try { savedSkin = localStorage.getItem('skin'); } catch (e) {}
+setSkin(savedSkin);   // antes de init(): el primer dibujo ya usa el skin guardado
 
 init();
 applyTheme(savedTheme === 'light' ? 'light' : 'dark');

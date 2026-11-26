@@ -12,7 +12,7 @@
   --kbd-text: #aaa;
   --overlay-bg: rgba(10, 10, 20, 0.75);
   --overlay-text: #e0e0e0;
-  --shadow: var(--shadow);
+  --shadow: transparent;
   --btn-bg: #7aa2f7;
   --btn-bg-hover: #9bbdff;
   --btn-text: #0f0f17;
@@ -640,3 +640,146 @@ body.mode-challenge .classic-only { display: none; }
 .ability-item .ds { grid-area: ds; font-size: 10px; color: var(--muted); }
 .ability-item .co { grid-area: co; font-size: 12px; font-weight: 700; }
 .ability-item .ky { grid-area: ky; font-size: 11px; font-weight: 700; color: var(--kbd-text); }
+
+/* ---- Temas visuales / skins ----
+   El fondo de los canvas (--canvas-bg) y la rejilla (--grid) los fija game.js desde skins.js.
+   Aquí van las variables y retoques del resto de la página. Retro no sobrescribe nada. */
+#board, #next-canvas, #hold-canvas, #lookahead-canvas { background: var(--canvas-bg, var(--board-bg)); }
+
+/* por encima del overlay: el skin también se puede cambiar en pausa y en game over */
+.skin-section { position: relative; z-index: 1; }
+.skin-options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.skin-btn {
+  background: var(--kbd-bg);
+  color: var(--text);
+  border: 1px solid var(--kbd-border);
+  border-radius: 6px;
+  padding: 5px 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.skin-btn:hover { border-color: var(--btn-bg); }
+.skin-btn:focus-visible { outline: 2px solid var(--value); outline-offset: 2px; }
+.skin-btn[aria-pressed="true"] { background: var(--btn-bg); color: var(--btn-text); border-color: var(--btn-bg); }
+
+/* Neon */
+[data-skin="neon"] {
+  --value: #00e5ff;
+  --btn-bg: #00e5ff;
+  --btn-bg-hover: #6ff3ff;
+  --btn-text: #000000;
+}
+[data-skin="neon"]:not([data-theme="light"]) {
+  --bg: #000000;
+  --board-bg: #07070d;
+  --border: #14506b;
+  --label: #6f7fb8;
+  --kbd-bg: #0b0b16;
+  --kbd-border: #1f3b57;
+  --shadow: rgba(0, 229, 255, 0.35);
+}
+[data-skin="neon"][data-theme="light"] {
+  --value: #7b1fa2;
+  --btn-bg: #7b1fa2;
+  --btn-bg-hover: #9c27b0;
+  --btn-text: #ffffff;
+  --border: #7b1fa2;
+  --shadow: rgba(213, 0, 249, 0.45);
+}
+[data-skin="neon"] .title span { text-shadow: 0 0 6px currentColor, 0 0 16px currentColor; }
+[data-skin="neon"] #next-canvas,
+[data-skin="neon"] #hold-canvas,
+[data-skin="neon"] #lookahead-canvas { box-shadow: 0 0 10px -2px var(--shadow); }
+
+/* Pastel */
+[data-skin="pastel"] {
+  --bg: #221e2e;
+  --board-bg: #2b2638;
+  --border: #4a4260;
+  --text: #f1eaf7;
+  --label: #a99cc4;
+  --muted: #b6abc9;
+  --value: #c9b6f2;
+  --kbd-bg: #342e45;
+  --kbd-border: #51496a;
+  --kbd-text: #d8cee8;
+  --overlay-bg: rgba(34, 30, 46, 0.78);
+  --overlay-text: #f1eaf7;
+  --shadow: rgba(201, 182, 242, 0.2);
+  --btn-bg: #c9b6f2;
+  --btn-bg-hover: #dccdfa;
+  --btn-text: #2b2638;
+}
+[data-skin="pastel"][data-theme="light"] {
+  --bg: #fdf1f6;
+  --board-bg: #fffafc;
+  --border: #e8d3e2;
+  --text: #4a3f5c;
+  --label: #94809f;
+  --muted: #75657f;
+  --value: #7e62b3;
+  --kbd-bg: #f8e8f1;
+  --kbd-border: #e3cbdc;
+  --kbd-text: #5f4f70;
+  --overlay-bg: rgba(253, 241, 246, 0.82);
+  --overlay-text: #4a3f5c;
+  --shadow: rgba(126, 98, 179, 0.2);
+  --btn-bg: #7e62b3;
+  --btn-bg-hover: #9479c7;
+  --btn-text: #ffffff;
+}
+[data-skin="pastel"] .title { filter: saturate(0.65); }
+[data-skin="pastel"] #board,
+[data-skin="pastel"] #next-canvas,
+[data-skin="pastel"] #hold-canvas,
+[data-skin="pastel"] #lookahead-canvas { border-radius: 12px; }
+[data-skin="pastel"] .skin-btn { border-radius: 14px; }
+
+/* Pixel art */
+[data-skin="pixel"] {
+  --bg: #1f1a2e;
+  --board-bg: #140c1c;
+  --border: #597dce;
+  --label: #8595a1;
+  --muted: #a9b4bd;
+  --value: #dad45e;
+  --kbd-bg: #30263f;
+  --kbd-border: #597dce;
+  --kbd-text: #deeed6;
+  --shadow: transparent;
+  --btn-bg: #dad45e;
+  --btn-bg-hover: #ece78a;
+  --btn-text: #140c1c;
+}
+[data-skin="pixel"][data-theme="light"] {
+  --bg: #c9dcc2;
+  --board-bg: #deeed6;
+  --border: #346524;
+  --text: #140c1c;
+  --label: #3f5a37;
+  --muted: #33472d;
+  --value: #854c30;
+  --kbd-bg: #b7cfae;
+  --kbd-border: #346524;
+  --kbd-text: #140c1c;
+  --overlay-bg: rgba(222, 238, 214, 0.85);
+  --overlay-text: #140c1c;
+  --btn-bg: #346524;
+  --btn-bg-hover: #46822f;
+  --btn-text: #ffffff;
+}
+[data-skin="pixel"] body { font-family: 'Courier New', Courier, monospace; }
+[data-skin="pixel"] .title { text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.55); }
+[data-skin="pixel"] #board,
+[data-skin="pixel"] #next-canvas,
+[data-skin="pixel"] #hold-canvas,
+[data-skin="pixel"] #lookahead-canvas { border-width: 2px; border-radius: 0; image-rendering: pixelated; }
+[data-skin="pixel"] .skin-btn,
+[data-skin="pixel"] .mode-tab,
+[data-skin="pixel"] .overlay,
+[data-skin="pixel"] #resume-btn,
+[data-skin="pixel"] #restart-btn,
+[data-skin="pixel"] #next-level-btn,
+[data-skin="pixel"] #menu-btn { border-radius: 0; }
