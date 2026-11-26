@@ -12,7 +12,7 @@ Open `index.html` directly, or serve statically (e.g. `python3 -m http.server 80
 
 ## Architecture
 
-Files: `challenges.js` (Modo Desafío: catálogo + `ChallengeStats`), `powerups.js` (pure power-up catalog/logic), `abilities.js` (pure charge-ability catalog/rules), `scoring.js` (pure scoring), `audio.js` (sound), all loaded before `game.js`; `index.html` (DOM + two canvases: `#board` 300×600 and the next-piece preview), `style.css` (dark/retro theme), and `game.js` (all logic, ~300 lines).
+Files: `challenges.js` (Modo Desafío: catálogo + `ChallengeStats`), `powerups.js` (pure power-up catalog/logic), `abilities.js` (pure charge-ability catalog/rules), `scoring.js` (pure scoring), `records.js` (local high scores), `audio.js` (sound), all loaded before `game.js`; `index.html` (DOM + two canvases: `#board` 300×600 and the next-piece preview), `style.css` (dark/retro theme), and `game.js` (all logic, ~300 lines).
 
 Key points in `game.js`:
 - Board is a `ROWS × COLS` matrix; cells hold `0` (empty), a color index 1–7 (standard pieces), `8` (wildcard) or 9–13 (special pieces: +, U, Y, 1×1, hollow 3×3). `PIECES`/`COLORS` are indexed by that value; `MAX_CELL` in `powerups.js` must match. Special-piece odds live in `SPECIAL_CONFIG`; a Tetris swaps `next` for the 1×1.
@@ -33,6 +33,10 @@ Catalog `POWERUPS` + `POWERUP_CONFIG` (trigger every N lines, chance, weights) l
 ## Modo Desafío
 
 Catálogo `CHALLENGES` en `challenges.js`. Para añadir un desafío basta una entrada `{id, name, icon, desc, levels[], setup, onTick, onLock, status, progress, result, rotateDir?, hideLocked?, badge?}` (hooks documentados al inicio del archivo); `game.js` no cambia. `game.js` solo tiene el pegamento (`startChallenge`, `checkChallenge`, `finishChallenge`, `chApi`, menú). En modo desafío los power-ups están desactivados y las estadísticas van aparte en `localStorage('challengeStats')`. Color `14` (`GARBAGE`) = basura/bloques fijos; `MAX_CELL` lo incluye.
+
+## Records locales
+
+`records.js` has the pure logic (`addEntry`, `rankFor`, `updateBests`, `sanitizeRecords`) and `createRecordStore` (`localStorage('records')`, tolerates corrupt JSON and unavailable storage); it exports via `module.exports` for Node. `game.js` (section "Records locales") holds the DOM glue. Classic mode only; only finished games (game over) are recorded, bests included. `showStartScreen()` is the boot state and the target of the Clásico tab: `onStart` is true, `current`/`next` are `null` (so `draw`/`drawNext` must tolerate it) and game input is ignored until «Jugar» calls `init()`. `endGame()` is the single recording point and runs once per game, so score/lines must be final before calling it. A qualifying score stays in `pendingRecord` until `commitPendingRecord()` (Guardar, any new game, start screen, challenge menu, `pagehide`). The keydown handler ignores events from text inputs.
 
 ## Gotchas
 

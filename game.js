@@ -83,6 +83,8 @@ let inventory, freezeLeft, effects, aiming, shakeLeft;
 let mode = 'classic', ch = null;
 // Habilidades cargables (lógica pura en abilities.js). `queue` = piezas tras `next` (Visión anticipada).
 let abil, queue, abilMenuOpen = false, lookaheadShown = false;
+// Records locales: `onStart` = pantalla de inicio visible (no hay partida en marcha)
+let onStart = true, runMaxCombo = 0;
 const energyEl = document.getElementById('energy');
 const energyFillEl = document.getElementById('energy-fill');
 const energyTextEl = document.getElementById('energy-text');
@@ -304,6 +306,7 @@ function draw() {
   ctx.save();
   if (shakeLeft > 0) ctx.translate((Math.random() - 0.5) * 6 * (shakeLeft / 300), (Math.random() - 0.5) * 6 * (shakeLeft / 300));
   drawGrid();
+  if (!current) { ctx.restore(); return; }   // pantalla de inicio: aún no hay partida
 
   // board
   const hideLocked = chHook('hideLocked', false);
@@ -343,7 +346,7 @@ function draw() {
 function drawNext() {
   const NB = 30;
   nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-  drawPieceIn(nextCtx, next, NB, 0);
+  if (next) drawPieceIn(nextCtx, next, NB, 0);
   drawLookahead();
 }
 
@@ -359,6 +362,7 @@ function drawPieceIn(context, piece, size, slot) {
 
 function endGame() {
   if (ch) { finishChallenge('lose'); return; }
+  if (gameOver || onStart) return;   // cada partida termina (y se registra) una sola vez
   gameOver = true;
   resumeBtn.classList.add('hidden');
   playSound('gameover');
@@ -366,10 +370,11 @@ function endGame() {
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
+  showGameOverRecords();
 }
 
 function togglePause() {
-  if (gameOver) return;
+  if (gameOver || onStart) return;
   if (!paused) cancelAim();
   paused = !paused;
   resumeBtn.classList.toggle('hidden', !paused);
@@ -425,6 +430,8 @@ function init() {
 }
 
 function resetRun() {
+  leaveRecordScreens();
+  runMaxCombo = 0;
   abil = createAbilityState();
   queue = Array.from({ length: ABILITY_CONFIG.lookaheadCount }, randomPiece);
   abilMenuOpen = false;
@@ -473,7 +480,9 @@ const HOLD_KEYS = ['KeyC', 'ShiftLeft', 'ShiftRight'];
 
 document.addEventListener('keydown', e => {
   AudioManager.unlock();
+  if (e.target instanceof HTMLInputElement && e.target.type === 'text') return;   // escribiendo el nombre
   if (e.code === 'KeyM') { toggleMute(); return; }
+  if (onStart) return;   // en la pantalla de inicio no hay teclas de juego
   if (abilMenuOpen) { handleAbilityMenuKey(e); return; }
   if (e.code === 'KeyP') { if (!menuOpen) togglePause(); return; }
   if (menuOpen || paused || gameOver) return;
@@ -543,7 +552,7 @@ function renderSlots(popIndex) {
 // def puede ser un objeto del catálogo o su id (útil desde la consola: grantPowerUp('bomb'))
 function grantPowerUp(def) {
   if (typeof def === 'string') def = POWERUPS[def];
-  if (!def || gameOver || ch) return false;
+  if (!def || gameOver || onStart || ch) return false;
   if (inventory.length >= POWERUP_CONFIG.maxInventory) {
     notify('Inventario lleno', def.color);
     return false;
@@ -614,17 +623,18 @@ function applyPowerUp(slot, target) {
   notify(`${def.icon} ${def.name}!`, def.color);
   spawnEffects(def, res, target);
 
-  // la pieza activa nunca debe quedar solapada con el tablero tras el efecto
-  while (collide(current.shape, current.x, current.y) && current.y > -current.shape.length) current.y--;
-  lastWasRotation = false;
-  if (collide(current.shape, current.x, current.y)) endGame();
-
   playSound('powerup');
   const lvl = level;
   const n = clearLines();   // gravedad / rayo pueden completar líneas
   if (n) score += scoreClearOnly(n, lvl);   // sin tocar combo ni B2B
   updateHUD();
   renderSlots();
+
+  // la pieza activa nunca debe quedar solapada con el tablero tras el efecto
+  while (collide(current.shape, current.x, current.y) && current.y > -current.shape.length) current.y--;
+  lastWasRotation = false;
+  // va al final: endGame() registra el record, así que puntos y líneas ya deben ser definitivos
+  if (collide(current.shape, current.x, current.y)) endGame();
 }
 
 function handlePowerUpKey(e) {
@@ -903,7 +913,7 @@ function takeSnapshot() {
   return {
     board: board.map(row => [...row]), score, lines, level, dropInterval,
     scoreState: { ...scoreState }, type: current.type, holdUsed: abil.holdUsed,
-    energyBefore: abil.energy, energyGain: 0,
+    energyBefore: abil.energy, energyGain: 0, runMaxCombo,
   };
 }
 
@@ -952,6 +962,7 @@ const ABILITY_EFFECTS = {
     const s = abil.snapshot;
     board = s.board; score = s.score; lines = s.lines; level = s.level;
     dropInterval = s.dropInterval; scoreState = s.scoreState;
+    runMaxCombo = s.runMaxCombo;
     abil.holdUsed = s.holdUsed;
     abil.energy = Math.max(0, abil.energy - s.energyGain);   // la energía de esa jugada también se revierte
     queue.unshift(next); queue.pop();                        // la pieza actual vuelve a ser la siguiente
@@ -1018,7 +1029,7 @@ function renderAbilityMenu() {
 
 // El menú pausa la partida mientras está abierto (no hay caída accidental ni conflicto con el bucle).
 function openAbilityMenu() {
-  if (ch || gameOver || paused || menuOpen || abilMenuOpen) return;
+  if (ch || gameOver || onStart || paused || menuOpen || abilMenuOpen) return;
   if (aiming) { notify('Termina de apuntar el power-up', '#ffffff'); return; }
   abilMenuOpen = true;
   paused = true;
@@ -1080,6 +1091,7 @@ function onScoreEvent(ev) {
   comboEl.textContent = `x${ev.multiplier}`;
   comboEl.classList.toggle('active', ev.multiplier >= 2);
   b2bEl.classList.toggle('hidden', !ev.b2bActive);
+  if (ev.cleared) runMaxCombo = Math.max(runMaxCombo, ev.multiplier);
 
   if (!ev.cleared) {
     if (ev.tspin !== 'none') { floatText(ev.title, '#b388ff', 0); playSound('tspin'); }
@@ -1267,6 +1279,10 @@ function showMenu(open) {
   tabChallenge.classList.toggle('active', open || !!ch);
   tabClassic.classList.toggle('active', !open && !ch);
   if (open) {
+    commitPendingRecord();   // salir del game over sin guardar también registra la puntuación
+    // sin esto, cerrar el menú de habilidades reanudaría (y podría registrar) la partida oculta
+    abilMenuOpen = false;
+    abilityMenuEl.classList.add('hidden');
     cancelAnimationFrame(animId);
     if (ch) paused = true;
     renderMenu();
@@ -1306,7 +1322,7 @@ tabClassic.addEventListener('click', () => {
   chBadgeEl.classList.add('hidden');
   document.getElementById('rot-hint').textContent = 'rotar';
   showMenu(false);
-  init();
+  showStartScreen();
   tabClassic.classList.add('active');
   tabChallenge.classList.remove('active');
 });
@@ -1315,5 +1331,150 @@ nextLevelBtn.addEventListener('click', () => { nextLevelBtn.blur(); startChallen
 menuBtn.addEventListener('click', () => { menuBtn.blur(); showMenu(true); });
 
 
-init();
+// ---- Records locales (lógica y persistencia en records.js; solo Modo Clásico) ----
+const startScreenEl = document.getElementById('start-screen');
+const startRecordsEl = document.getElementById('start-records');
+const playBtn = document.getElementById('play-btn');
+const overRecordsBlockEl = document.getElementById('over-records-block');
+const overRecordsEl = document.getElementById('over-records');
+const recordMsgEl = document.getElementById('record-msg');
+const recordFormEl = document.getElementById('record-form');
+const recordNameEl = document.getElementById('record-name');
+const recordStore = createRecordStore();
+let pendingRecord = null;   // { score, lines, combo } que entra en el top y aún no se ha guardado
+// El foco se retrasa para que las teclas que aún se estaban pulsando al perder no se escriban en el nombre.
+const NAME_FOCUS_DELAY_MS = 600;
+
+function textEl(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+const formatCombo = combo => combo ? `x${combo}` : '—';
+
+// Tabla, estadísticas y reset (con confirmación en la propia página). Los nombres van con textContent.
+function renderRecords(container, records, highlight = -1) {
+  const table = textEl('table', 'records-table');
+  const headRow = table.createTHead().insertRow();
+  for (const title of ['#', 'Nombre', 'Puntos', 'Líneas', 'Combo']) headRow.appendChild(textEl('th', '', title));
+  const body = table.createTBody();
+  for (let i = 0; i < RECORDS_CONFIG.maxEntries; i++) {
+    const entry = records.top[i];
+    const row = body.insertRow();
+    row.classList.toggle('highlight', i === highlight);
+    const cells = entry
+      ? [i + 1, entry.name, entry.score.toLocaleString(), entry.lines, formatCombo(entry.combo)]
+      : [i + 1, '—', '—', '—', '—'];
+    for (const value of cells) row.appendChild(textEl('td', '', value));
+  }
+
+  const stats = textEl('p', 'records-stats');
+  stats.append(
+    textEl('span', '', `Mejor combo: ${formatCombo(records.bestCombo)}`),
+    textEl('span', '', `Máx. líneas: ${records.bestLines}`),
+  );
+
+  const resetBtn = textEl('button', 'records-btn', 'Borrar records');
+  resetBtn.type = 'button';
+  resetBtn.disabled = !records.top.length && !records.bestCombo && !records.bestLines;
+
+  const confirmBox = textEl('div', 'records-confirm hidden');
+  const yesBtn = textEl('button', 'records-btn danger', 'Sí, borrar');
+  const noBtn = textEl('button', 'records-btn', 'Cancelar');
+  yesBtn.type = noBtn.type = 'button';
+  confirmBox.append(textEl('span', '', '¿Borrar todos los records?'), yesBtn, noBtn);
+
+  const askReset = asking => {
+    resetBtn.classList.toggle('hidden', asking);
+    confirmBox.classList.toggle('hidden', !asking);
+  };
+  resetBtn.addEventListener('click', () => { resetBtn.blur(); askReset(true); });
+  noBtn.addEventListener('click', () => { noBtn.blur(); askReset(false); });
+  yesBtn.addEventListener('click', () => { yesBtn.blur(); resetRecords(); });
+
+  container.replaceChildren(table, stats, resetBtn, confirmBox);
+}
+
+// Se llama una vez desde endGame(), con la puntuación ya definitiva.
+function showGameOverRecords() {
+  const run = { score, lines, combo: runMaxCombo };
+  const records = updateBests(recordStore.load(), run);
+  recordStore.save(records);
+  const preview = addEntry(records, { ...run, name: '¿Tu nombre?' });
+  const enters = preview.index >= 0;
+  pendingRecord = enters ? run : null;
+
+  recordMsgEl.textContent = enters ? `★ ¡Entras en el top! Puesto #${preview.index + 1}` : '';
+  recordMsgEl.classList.toggle('hidden', !enters);
+  recordFormEl.classList.toggle('hidden', !enters);
+  recordNameEl.value = '';
+  renderRecords(overRecordsEl, enters ? preview.records : records, preview.index);
+  overlayScore.classList.toggle('new-record', enters);
+  overRecordsBlockEl.classList.remove('hidden');
+  overlay.classList.add('with-records');
+  if (enters) setTimeout(() => {
+    if (pendingRecord === run) recordNameEl.focus({ preventScroll: true });
+  }, NAME_FOCUS_DELAY_MS);
+}
+
+// Guarda la puntuación pendiente con el nombre escrito (vacío = "Anónimo"). Sin pendiente no hace nada.
+function commitPendingRecord() {
+  if (!pendingRecord) return;
+  const result = addEntry(recordStore.load(), { ...pendingRecord, name: recordNameEl.value });
+  pendingRecord = null;
+  recordStore.save(result.records);
+  recordNameEl.blur();
+  recordFormEl.classList.add('hidden');
+  recordMsgEl.textContent = result.index >= 0
+    ? `★ Guardado en el puesto #${result.index + 1}`
+    : 'La puntuación ya no entra en el top';
+  renderRecords(overRecordsEl, result.records, result.index);
+}
+
+function resetRecords() {
+  pendingRecord = null;   // la tabla debe quedar vacía: la partida recién terminada tampoco se guarda
+  recordStore.reset();
+  recordMsgEl.classList.add('hidden');
+  recordFormEl.classList.add('hidden');
+  overlayScore.classList.remove('new-record');
+  renderRecords(startRecordsEl, recordStore.load());
+  renderRecords(overRecordsEl, recordStore.load());
+}
+
+// Cierra la pantalla de inicio y los records del game over (lo usa toda partida nueva).
+function leaveRecordScreens() {
+  commitPendingRecord();
+  onStart = false;
+  startScreenEl.classList.add('hidden');
+  overRecordsBlockEl.classList.add('hidden');
+  overlayScore.classList.remove('new-record');
+  overlay.classList.remove('with-records');
+}
+
+// Pantalla de inicio del Modo Clásico: la partida no arranca hasta pulsar «Jugar».
+function showStartScreen() {
+  mode = 'classic'; ch = null;
+  document.body.classList.remove('mode-challenge');
+  resetRun();                       // deja tablero y panel a cero...
+  cancelAnimationFrame(animId);     // ...pero sin partida: ni caída ni piezas
+  onStart = true;
+  current = next = null;
+  draw();
+  drawNext();
+  renderRecords(startRecordsEl, recordStore.load());
+  startScreenEl.classList.remove('hidden');
+}
+
+playBtn.addEventListener('click', () => { playBtn.blur(); init(); });
+recordFormEl.addEventListener('submit', e => { e.preventDefault(); commitPendingRecord(); });
+// la autorrepetición de una tecla de juego mantenida no escribe ni envía (borrar y mover el cursor sí)
+recordNameEl.addEventListener('keydown', e => {
+  if (e.repeat && !/^(Backspace|Delete|Arrow)/.test(e.key)) e.preventDefault();
+});
+window.addEventListener('pagehide', commitPendingRecord);   // cerrar o recargar tampoco pierde el record
+
+
+showStartScreen();
 applyTheme(savedTheme === 'light' ? 'light' : 'dark');

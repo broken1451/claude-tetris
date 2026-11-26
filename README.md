@@ -65,6 +65,12 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
   - 🐢 **Tiempo lento** (40): la caída es 2,5× más lenta durante 10 s.
   - ⏪ **Deshacer** (50): revierte la última colocación (tablero, puntos y la energía que dio).
   - Las temporales muestran una barra de duración en el panel. Catálogo y reglas en `abilities.js`.
+- **Tabla de records local** (solo modo Clásico; lógica en `records.js`, guardada en `localStorage('records')`):
+  - **Top 5** con nombre, puntos, líneas y combo máximo, además del **mejor combo** y las **líneas máximas** de las partidas terminadas (las abandonadas no cuentan).
+  - Se muestra en la **pantalla de inicio** (el juego no arranca hasta pulsar **Jugar**; la pestaña **Clásico** vuelve a ella) y en el **Game Over**.
+  - Si la puntuación entra en el top, se resalta y aparece un campo para el nombre (máx. 12 caracteres). Al reiniciar o salir sin pulsar **Guardar** se registra igualmente (como «Anónimo» si el campo está vacío).
+  - Botón **Borrar records**, con confirmación dentro de la página.
+  - Sin almacenamiento disponible, los records duran lo que dure la página.
 - **Título «Claude Tetris»** centrado, con cada letra coloreada con la paleta de las piezas.
 
 ---
@@ -186,6 +192,7 @@ Cuando una pieza recién generada ya colisiona al aparecer (`spawn`), se dispara
 ├── index.html                       # Estructura del DOM y canvas
 ├── style.css                        # Estilos del juego (dark theme + título)
 ├── game.js                          # Toda la lógica del Tetris (~300 líneas)
+├── records.js                       # Records locales: lógica pura y persistencia
 ├── README.md
 ├── CLAUDE.md                        # Guía del proyecto para Claude Code
 ├── .gitignore                       # Ignora .DS_STORE
