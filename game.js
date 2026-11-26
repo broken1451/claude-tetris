@@ -61,7 +61,6 @@ const levelEl = document.getElementById('level');
 const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
-const resumeBtn = document.getElementById('resume-btn');
 const restartBtn = document.getElementById('restart-btn');
 
 const slotsEl = document.getElementById('powerup-slots');
@@ -177,8 +176,8 @@ function clearLines() {
   if (cleared) {
     const prevLines = lines;
     lines += cleared;
-    level = Math.floor(lines / 10) + 1;
-    dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    level = levelFor(runStartLevel, lines);
+    dropInterval = dropIntervalFor(level);
     updateHUD();
     gainEnergy(cleared);
     if (cleared === 4 && SPECIAL_CONFIG.singleOnTetris) {
@@ -360,7 +359,7 @@ function drawPieceIn(context, piece, size, slot) {
 function endGame() {
   if (ch) { finishChallenge('lose'); return; }
   gameOver = true;
-  resumeBtn.classList.add('hidden');
+  closePauseMenu();
   playSound('gameover');
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
@@ -368,22 +367,95 @@ function endGame() {
   overlay.classList.remove('hidden');
 }
 
-function togglePause() {
-  if (gameOver) return;
-  if (!paused) cancelAim();
-  paused = !paused;
-  resumeBtn.classList.toggle('hidden', !paused);
-  if (!paused) {
-    overlay.classList.add('hidden');
-    lastTime = performance.now();
-    loop(lastTime);
-  } else {
-    cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
-  }
+// ---- Menú de pausa y nivel inicial ----
+const START_LEVEL = { key: 'startLevel', min: 1, max: 15 };
+
+// Valor guardado o elegido → nivel válido; cualquier dato corrupto o fuera de rango vuelve al mínimo.
+function parseStartLevel(value) {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= START_LEVEL.min && n <= START_LEVEL.max ? n : START_LEVEL.min;
 }
+
+const levelFor = (startLevel, lines) => startLevel + Math.floor(lines / 10);
+const dropIntervalFor = level => Math.max(100, 1000 - (level - 1) * 90);
+
+// `startLevelPref` es lo elegido en el selector; `runStartLevel` queda fijado al empezar cada partida.
+let startLevelPref = START_LEVEL.min, runStartLevel = START_LEVEL.min, pauseMenuOpen = false;
+try { startLevelPref = parseStartLevel(localStorage.getItem(START_LEVEL.key)); } catch (e) {}
+
+const gameContainerEl = document.querySelector('.game-container');
+const pauseMenuEl = document.getElementById('pause-menu');
+const pauseMainEl = document.getElementById('pause-main');
+const pauseControlsEl = document.getElementById('pause-controls');
+const startLevelEl = document.getElementById('start-level');
+
+for (let n = START_LEVEL.min; n <= START_LEVEL.max; n++) startLevelEl.add(new Option(`Nivel ${n}`, n));
+startLevelEl.value = String(startLevelPref);
+
+function showPauseView(view) {
+  pauseMainEl.classList.toggle('hidden', view !== 'main');
+  pauseControlsEl.classList.toggle('hidden', view !== 'controls');
+  // foco en el diálogo (no en un botón): Tab entra al menú y Espacio/Enter no activan nada por accidente
+  pauseMenuEl.focus({ preventScroll: true });
+}
+
+function openPauseMenu() {
+  if (gameOver || menuOpen || paused) return;   // `paused` cubre también el menú de habilidades
+  cancelAim();
+  paused = true;
+  pauseMenuOpen = true;
+  cancelAnimationFrame(animId);
+  gameContainerEl.inert = true;   // sin foco ni clics en el tablero y el panel
+  pauseMenuEl.classList.remove('hidden');
+  showPauseView('main');
+}
+
+// Solo oculta el menú; no reanuda la partida.
+function closePauseMenu() {
+  if (!pauseMenuOpen) return;
+  pauseMenuOpen = false;
+  document.activeElement?.blur?.();   // al reanudar, Espacio/Enter no deben reactivar ningún control
+  gameContainerEl.inert = false;
+  pauseMenuEl.classList.add('hidden');
+}
+
+function resumeGame() {
+  if (!pauseMenuOpen) return;
+  closePauseMenu();
+  paused = false;
+  lastTime = performance.now();
+  loop(lastTime);
+}
+
+function togglePause() {
+  if (pauseMenuOpen) resumeGame(); else openPauseMenu();
+}
+
+// P abre/cierra; Esc además vuelve atrás desde un submenú.
+function handlePauseKey(code) {
+  const inSubmenu = pauseMenuOpen && !pauseControlsEl.classList.contains('hidden');
+  if (code === 'Escape' && inSubmenu) showPauseView('main');
+  else togglePause();
+}
+
+// Nueva partida en el modo actual, sin recargar la página.
+function restartGame() {
+  if (ch) startChallenge(ch.def.id, ch.lvlIdx); else init();
+}
+
+function bindPauseButton(id, action) {
+  const btn = document.getElementById(id);
+  btn.addEventListener('click', () => { btn.blur(); action(); });
+}
+bindPauseButton('pause-resume', resumeGame);
+bindPauseButton('pause-restart', restartGame);
+bindPauseButton('pause-controls-btn', () => showPauseView('controls'));
+bindPauseButton('pause-back', () => showPauseView('main'));
+
+startLevelEl.addEventListener('change', () => {
+  startLevelPref = parseStartLevel(startLevelEl.value);
+  try { localStorage.setItem(START_LEVEL.key, String(startLevelPref)); } catch (e) {}
+});
 
 function loop(ts) {
   const dt = ts - lastTime;
@@ -429,13 +501,15 @@ function resetRun() {
   queue = Array.from({ length: ABILITY_CONFIG.lookaheadCount }, randomPiece);
   abilMenuOpen = false;
   abilityMenuEl.classList.add('hidden');
+  closePauseMenu();
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  runStartLevel = ch ? START_LEVEL.min : startLevelPref;   // los desafíos siempre empiezan en 1
+  level = runStartLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = dropIntervalFor(level);
   dropAccum = 0;
   scoreState = createScoreState();
   lastWasRotation = false;
@@ -455,7 +529,6 @@ function resetRun() {
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
-  resumeBtn.classList.add('hidden');
   overlay.classList.remove('win');
   restartBtn.textContent = 'Reiniciar';
   nextLevelBtn.classList.add('hidden');
@@ -474,9 +547,18 @@ const HOLD_KEYS = ['KeyC', 'ShiftLeft', 'ShiftRight'];
 document.addEventListener('keydown', e => {
   AudioManager.unlock();
   if (e.code === 'KeyM') { toggleMute(); return; }
+  if (e.repeat && (e.code === 'KeyP' || e.code === 'Escape')) return;
   if (abilMenuOpen) { handleAbilityMenuKey(e); return; }
-  if (e.code === 'KeyP') { if (!menuOpen) togglePause(); return; }
-  if (menuOpen || paused || gameOver) return;
+  if (menuOpen) return;
+  // Mientras se apunta un power-up, Esc lo cancela (handlePowerUpKey) en vez de pausar.
+  if ((e.code === 'KeyP' && !e.ctrlKey && !e.metaKey && !e.altKey) || (e.code === 'Escape' && !aiming)) {
+    e.preventDefault();
+    handlePauseKey(e.code);
+    return;
+  }
+  // con el diálogo enfocado, flechas y Espacio no deben desplazar la página (el selector las sigue usando)
+  if (e.target === pauseMenuEl && /^(Arrow|Space)/.test(e.code)) e.preventDefault();
+  if (paused || gameOver) return;
   if (handlePowerUpKey(e)) return;
   if (e.code === 'KeyQ') { openAbilityMenu(); return; }
   if (HOLD_KEYS.includes(e.code)) { e.preventDefault(); doHold(); return; }
@@ -1133,8 +1215,7 @@ muteBtn.addEventListener('click', () => { AudioManager.unlock(); toggleMute(); m
 document.addEventListener('pointerdown', () => AudioManager.unlock());
 syncSoundUI();
 
-resumeBtn.addEventListener('click', () => { resumeBtn.blur(); if (paused) togglePause(); });
-restartBtn.addEventListener('click', () => ch ? startChallenge(ch.def.id, ch.lvlIdx) : init());
+restartBtn.addEventListener('click', () => { restartBtn.blur(); restartGame(); });
 
 // ---- Tema claro/oscuro (oscuro por defecto) ----
 const themeToggle = document.getElementById('theme-toggle');
@@ -1235,7 +1316,7 @@ function finishChallenge(result) {
   overlay.classList.toggle('win', won);
   overlayTitle.textContent = won ? '¡VICTORIA!' : 'DERROTA';
   overlayScore.textContent = [ch.def.name + ' · ' + ch.lvl.label, res && res.text].filter(Boolean).join(' — ');
-  resumeBtn.classList.add('hidden');
+  closePauseMenu();
   restartBtn.textContent = 'Reiniciar desafío';
   nextLevelBtn.classList.toggle('hidden', !(won && ch.def.levels[ch.lvlIdx + 1]));
   menuBtn.classList.remove('hidden');

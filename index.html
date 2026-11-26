@@ -104,7 +104,7 @@
             <li><kbd>↑</kbd> <span id="rot-hint">rotar</span></li>
             <li><kbd>↓</kbd> bajar</li>
             <li><kbd>Space</kbd> caída</li>
-            <li><kbd>P</kbd> pausa</li>
+            <li><kbd>P</kbd> / <kbd>Esc</kbd> pausa</li>
             <li><kbd>1</kbd>-<kbd>3</kbd> power-up</li>
             <li><kbd>R</kbd> rayo fila/col</li>
             <li><kbd>Q</kbd> habilidades</li>
@@ -120,10 +120,45 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
-        <button id="resume-btn" class="hidden">Continuar</button>
         <button id="restart-btn">Reiniciar</button>
         <button id="next-level-btn" class="hidden">Siguiente nivel</button>
         <button id="menu-btn" class="hidden">Menú de desafíos</button>
+      </div>
+    </div>
+
+    <!-- Menú de pausa (independiente del overlay de fin de partida) -->
+    <div id="pause-menu" class="pause-menu hidden" tabindex="-1" role="dialog" aria-modal="true" aria-label="Menú de pausa">
+      <div class="pause-box">
+        <div id="pause-main" class="pause-view">
+          <p class="pause-title">PAUSA</p>
+          <button id="pause-resume" class="pause-btn" type="button">Reanudar</button>
+          <button id="pause-restart" class="pause-btn" type="button">Reiniciar</button>
+          <button id="pause-controls-btn" class="pause-btn" type="button">Ver controles</button>
+          <label class="pause-level">Nivel inicial
+            <select id="start-level" aria-describedby="start-level-hint"></select>
+          </label>
+          <p id="start-level-hint" class="pause-hint">Se aplica a la próxima partida clásica</p>
+        </div>
+        <div id="pause-controls" class="pause-view hidden">
+          <p class="pause-title">CONTROLES</p>
+          <ul class="pause-keys">
+            <li><span><kbd>←</kbd> <kbd>→</kbd></span> Mover</li>
+            <li><span><kbd>↑</kbd> <kbd>X</kbd></span> Rotar</li>
+            <li><span><kbd>↓</kbd></span> Bajar</li>
+            <li><span><kbd>Space</kbd></span> Caída instantánea</li>
+            <li><span><kbd>C</kbd> <kbd>Shift</kbd></span> Reserva (Hold)</li>
+            <li><span><kbd>Q</kbd></span> <span>Habilidades (elegir: <kbd>1</kbd>-<kbd>4</kbd>)</span></li>
+            <li><span><kbd>1</kbd>-<kbd>3</kbd></span> Usar power-up</li>
+            <li><span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></span> Apuntar power-up</li>
+            <li><span><kbd>Enter</kbd> <kbd>Space</kbd></span> Confirmar objetivo</li>
+            <li><span><kbd>R</kbd></span> Rayo: fila / columna</li>
+            <li><span><kbd>P</kbd> <kbd>Esc</kbd></span> Pausar / reanudar</li>
+            <li><span><kbd>Esc</kbd></span> Cancelar / volver</li>
+            <li><span><kbd>M</kbd></span> Silenciar</li>
+          </ul>
+          <p class="pause-hint">Hold, habilidades y power-ups: solo en modo Clásico</p>
+          <button id="pause-back" class="pause-btn" type="button">Volver</button>
+        </div>
       </div>
     </div>
   </div>
